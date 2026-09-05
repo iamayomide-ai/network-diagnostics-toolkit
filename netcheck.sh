@@ -1,36 +1,55 @@
+
 #!/bin/bash
 set -euo pipefail
-
+ 
 # --- Colors ---
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
-
+ 
 # --- Helper Functions ---
 print_section_header() {
     echo ""
     echo -e "${CYAN}=== $1 ===${NC}"
     echo ""
 }
-
+ 
 print_pass() {
     echo -e "  ${GREEN}[PASS]${NC} $1"
 }
-
+ 
 print_fail() {
     echo -e "  ${RED}[FAIL]${NC} $1"
 }
-
+ 
 print_warn() {
     echo -e "  ${YELLOW}[WARN]${NC} $1"
 }
-
+ 
 strip_colors() {
     sed 's/\x1b\[[0-9;]*m//g'
 }
-
+ 
+# --- Dependency Check ---
+check_dependencies() {
+    local required_cmds=("ping" "dig" "ss" "timeout" "awk" "sed")
+    local missing=()
+ 
+    for cmd in "${required_cmds[@]}"; do
+        if ! command -v "$cmd" > /dev/null 2>&1; then
+            missing+=("$cmd")
+        fi
+    done
+ 
+    if [[ ${#missing[@]} -gt 0 ]]; then
+        echo -e "${RED}Error: missing required command(s): ${missing[*]}${NC}" >&2
+        echo "Install them before running netcheck.sh (e.g. 'apt install dnsutils iproute2 iputils-ping coreutils')." >&2
+        exit 127
+    fi
+}
+ 
 # --- Connectivity Check ---
 check_connectivity () {
  print_section_header "Connectivity Check (ICMP)"
@@ -43,7 +62,7 @@ check_connectivity () {
         fi
     done
 }
-
+ 
 # --- Port Scanning ---
 check_port() {
     local host="$1"
@@ -69,7 +88,7 @@ scan_ports() {
         check_port "$host" "$port"
     done
 }
-
+ 
 # --- Report Generation ---
 generate_report_header() {
     echo "=========================================="
@@ -80,10 +99,8 @@ generate_report_header() {
     echo " Uptime: $(uptime -p)"
     echo "=========================================="
 }
-
-
-# --- Main ---
-
+ 
+ 
 # --- Connection State Analysis ---
 check_connections() {
     print_section_header "Connection Summary"
@@ -91,21 +108,13 @@ check_connections() {
     ss -tan 2>/dev/null | awk 'NR>1 {state[$1]++} END {for (s in state) printf "    %-14s %d\n", s, state[s]}' | sort
     echo ""
 }
-
-# --- Connection State Analysis ---
-check_connections() {
-    print_section_header "Connection Summary"
-    echo "  TCP connection states:"
-    ss -tan 2>/dev/null | awk 'NR>1 {state[$1]++} END {for (s in state) printf "    %-14s %d\n", s, state[s]}' | sort
-    echo ""
-}
-
+ 
 check_listening() {
     echo "  Listening TCP ports:"
     ss -tln 2>/dev/null | awk 'NR>1 {printf "    %s\n", $4}'
     echo ""
 }
-
+ 
 # --- DNS Resolution ---
 check_dns() {
     print_section_header "DNS Resolution"
@@ -125,14 +134,14 @@ check_dns() {
         fi
     done
 }
-
+ 
 print_banner () {
   echo -e "${CYAN}"
     echo "  netcheck.sh - Network Diagnostics Toolkit"
     echo "  $(date '+%Y-%m-%d %H:%M:%S')"
     echo -e "${NC}"
 }
-
+ 
 run_all () {
         check_connectivity
         check_dns
@@ -140,11 +149,13 @@ run_all () {
         check_connections
         check_listening
 }
-
+ 
 main () {
+    check_dependencies
+ 
     local report_mode=false
     local mode="all"
-
+ 
     for arg in "$@"; do
         case "$arg" in
             --report)
@@ -159,7 +170,7 @@ main () {
                 ;;
         esac
     done
-
+ 
     if [[ "$report_mode" == true ]]; then
         local report_file="netcheck-$(date '+%Y-%m-%d-%H%M%S').log"
         {
@@ -186,6 +197,5 @@ main () {
         esac
     fi
 }
-
+ 
 main "$@"
-
