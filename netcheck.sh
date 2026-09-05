@@ -1,3 +1,4 @@
+
 #!/bin/bash
 set -euo pipefail
  
@@ -98,7 +99,7 @@ generate_report_header() {
     echo " Date: $(date '+%Y-%m-%d %H:%M:%S')"
     echo " Hostname: $(hostname)"
     echo " Kernel: $(uname -r)"
-    echo " Uptime: $(uptime -p)"
+    echo " Uptime: $(uptime -p 2>/dev/null || uptime)"
     echo "=========================================="
 }
  
@@ -215,5 +216,4 @@ main () {
 }
  
 main "$@"
- 
  
