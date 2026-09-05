@@ -1,4 +1,3 @@
-
 #!/bin/bash
 set -euo pipefail
  
@@ -22,6 +21,9 @@ print_pass() {
  
 print_fail() {
     echo -e "  ${RED}[FAIL]${NC} $1"
+    if [[ -n "${FAIL_COUNT_FILE:-}" ]]; then
+        echo "x" >> "$FAIL_COUNT_FILE"
+    fi
 }
  
 print_warn() {
@@ -153,6 +155,9 @@ run_all () {
 main () {
     check_dependencies
  
+    FAIL_COUNT_FILE=$(mktemp)
+    trap 'rm -f "$FAIL_COUNT_FILE"' EXIT
+ 
     local report_mode=false
     local mode="all"
  
@@ -196,6 +201,19 @@ main () {
             connections) check_connections; check_listening ;;
         esac
     fi
+ 
+    local fail_count
+    fail_count=$(wc -l < "$FAIL_COUNT_FILE" | tr -d ' ')
+ 
+    echo ""
+    if [[ "$fail_count" -gt 0 ]]; then
+        echo -e "${RED}${fail_count} check(s) failed.${NC}"
+        exit 1
+    else
+        echo -e "${GREEN}All checks passed.${NC}"
+    fi
 }
  
 main "$@"
+ 
+ 
