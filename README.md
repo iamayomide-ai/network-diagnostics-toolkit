@@ -3,6 +3,19 @@
 
 A lightweight, native, and robust network diagnostics utility written entirely in Bash. This tool tests network health across multiple layers (ICMP, DNS, TCP) and generates timestamped, color-stripped incident reports.
 
+## Why I Built This
+
+Most network troubleshooting tools I found either required installing extra 
+dependencies or hid what they were actually doing under layers of abstraction. 
+I wanted something I could drop onto any Linux box — no pip installs, no 
+Python runtime, nothing beyond what's already on the system — and get a clear, 
+layered picture of network health: is the link up, is DNS resolving, are the 
+right ports open, what does the kernel's socket table look like. Building the 
+TCP scanner on Bash's `/dev/tcp` pseudo-device instead of reaching for `nc` or 
+`nmap` was a deliberate constraint — it forced the tool to stay dependency-free 
+and portable by design, not by accident.
+
+
 ## Features
 
 - **Reachability Checks (ICMP):** Pings core public DNS servers and local gateways to check basic outgoing packet connectivity.
@@ -34,3 +47,11 @@ chmod +x netcheck.sh
 ./netcheck.sh --report
 ```
 This prints colorized results to the terminal while saving a clean, plain-text log file named `netcheck-YYYY-MM-DD-HHMMSS.log` in your directory.
+
+## Outcome
+
+The toolkit runs cleanly on a bare-minimum Linux install with no extra 
+packages, and the timestamped reports give a reusable audit trail instead of 
+scrollback you lose the moment you close the terminal. It's become my default 
+first-response tool whenever I need a fast read on whether a connectivity 
+issue is local, DNS-related, or a blocked port.
